@@ -1,21 +1,18 @@
 // controllers/project.controller.js
 import Project from "../models/Project.model.js";
 
-
-// GET ALL PROJECTS (WEB + ADMIN)
-
+/* ================= GET ALL PROJECTS ================= */
 export const getProjects = async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
     res.status(200).json(projects);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to fetch projects" });
   }
 };
 
-
-// CREATE PROJECT (ADMIN)
-
+/* ================= CREATE PROJECT ================= */
 export const createProject = async (req, res) => {
   try {
     const { title, description, category } = req.body;
@@ -28,7 +25,7 @@ export const createProject = async (req, res) => {
       title,
       description,
       category,
-      image: `/uploads/projects/${req.file.filename}`,
+      image: req.file.path, // 🌥️ Cloudinary URL
     });
 
     res.status(201).json(project);
@@ -38,35 +35,44 @@ export const createProject = async (req, res) => {
   }
 };
 
-
-// UPDATE PROJECT
-
+/* ================= UPDATE PROJECT ================= */
 export const updateProject = async (req, res) => {
   try {
     const updateData = { ...req.body };
 
     if (req.file) {
-      updateData.image = `/uploads/projects/${req.file.filename}`;
+      updateData.image = req.file.path; // 🌥️ Cloudinary URL
     }
 
-    await Project.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-    });
+    const updated = await Project.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
 
-    res.status(200).json({ success: true });
+    if (!updated) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.status(200).json(updated);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to update project" });
   }
 };
 
-
-// DELETE PROJECT
-
+/* ================= DELETE PROJECT ================= */
 export const deleteProject = async (req, res) => {
   try {
-    await Project.findByIdAndDelete(req.params.id);
+    const deleted = await Project.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
     res.status(200).json({ success: true });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to delete project" });
   }
 };
