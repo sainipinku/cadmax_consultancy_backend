@@ -2,15 +2,51 @@ import mongoose from "mongoose";
 
 const subCategorySchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    image: { type: String },
-    description: String,
-    category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+    /* ================= SERVICE TYPE ================= */
+    service: {
+      type: String,
+      enum: ["engineering", "surveying", "planning"],
+      required: true,
+      index: true, // fast filtering
+    },
+
+    /* ================= PAGE SECTION ================= */
+    sectionType: {
+      type: String,
+      enum: ["hero", "overlap", "content", "collage"],
       required: true,
     },
-    status: { type: Boolean, default: true },
+
+    /* ================= TEXT CONTENT ================= */
+    title: {
+      type: String,
+      trim: true,
+    },
+
+    description: {
+      type: String,
+      trim: true,
+    },
+
+    redirectLink: {
+      type: String, // collage item click link
+    },
+
+    /* ================= IMAGE (AWS S3) ================= */
+    image: {
+      url: {
+        type: String, // public S3 URL
+      },
+      key: {
+        type: String, // S3 object key (delete ke liye)
+      },
+    },
+
+    /* ================= STATUS ================= */
+    status: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

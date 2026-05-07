@@ -79,15 +79,20 @@ src/
  
 
 
-mongodb+srv://pradeepsaini2206_db_user:<db_password>@cluster0.abw97u4.mongodb.net/?appName=Cluster0
+mongodb+srv://pradeepsaini2206_db_user:cadmax123@cluster0.abw97u4.mongodb.net/?appName=Cluster0
 
 
 Username: cadmaxadmin
 Password: strongpassword123
 Role: Read and write to any database
 
+mongo new pass ==> cadmax123
+
+login page 
+Email: cadmax@admin.com
+Password: admin@123
 
 
-
-Email: admin@cadmax.com
-Password: admin123
+<!-- db username and password 
+cadmax_conweb
+AyvIft0RycHatONS -->

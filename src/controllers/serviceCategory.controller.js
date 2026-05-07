@@ -26,7 +26,7 @@ export const createCategory = async (req, res) => {
 
     res.status(201).json(category);
   } catch (err) {
-    console.error("❌ CREATE CATEGORY ERROR:", err);
+    console.error(" CREATE CATEGORY ERROR:", err);
 
     // Mongoose validation error
     if (err.name === "ValidationError") {
@@ -74,7 +74,7 @@ export const updateCategory = async (req, res) => {
     await category.save();
     res.json(category);
   } catch (err) {
-    console.error("❌ UPDATE CATEGORY ERROR:", err);
+    console.error(" UPDATE CATEGORY ERROR:", err);
 
     if (err.name === "ValidationError") {
       return res.status(400).json({ message: err.message });

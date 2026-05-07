@@ -9,27 +9,94 @@ const projectSchema = new mongoose.Schema(
       trim: true,
     },
 
-    description: {
+    image: {
       type: String,
-      required: true,
+      required: false,
+      trim: true,
+      default: null,
+    },
+
+    heroImage: {
+      type: String,
       trim: true,
     },
 
-    image: {
+    location: {
       type: String,
-      required: true,
+      trim: true,
     },
 
-    category: {
+    description: {
+      type: String,
+      trim: true,
+    },
+
+    content: {
+      type: String,
+      trim: true,
+    },
+
+    sector: {
+      type: String,
+      required: true,
+      enum: ["ENGINEERING", "SURVEYING", "PLANNING"],
+      set: (value) => (value ? value.toUpperCase() : value),
+    },
+
+    subCategory: {
+      type: String,
+      enum: [
+        "TRANSPORTATION",
+        "WATER INFLUENCE",
+        "ENERGY SECTOR",
+        "IRRIGATION SECTOR",
+        "CITY SURVEY SECTOR",
+        "REAL ESTATE SECTOR",
+        "",
+        null
+      ],
+      default: "",
+      set: (value) => (value ? value.toUpperCase() : value),
+    },
+
+    projectType: {
       type: String,
       required: true,
       enum: [
-        "MANORATE AND BOUNDARY CONSTRUCTION",
-        "ROAD NETWORK",
-        "WATER SUPPLY",
-        "ELECTRICITY",
+        "PROJECT CARD",
+        "PROJECT LIST",
       ],
-      set: (value) => value.toUpperCase(), // 🔥 MAIN FIX
+      set: (value) => (value ? value.toUpperCase() : value),
+    },
+
+    area: {
+      type: String,
+      trim: true,
+    },
+
+    file: {
+      type: String,
+      trim: true,
+    },
+
+    serialNumber: {
+      type: Number,
+      default: 0,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

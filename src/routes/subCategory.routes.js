@@ -6,9 +6,7 @@ import {
   deleteSubCategory,
 } from "../controllers/subCategory.controller.js";
 
-import {
-  uploadImage,
-} from "../middlewares/upload.middleware.js";
+import { uploadImage } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -22,11 +20,11 @@ router.post(
 /* UPDATE */
 router.put(
   "/:id",
- uploadImage.single("image"),
+  uploadImage.single("image"),
   updateSubCategory
 );
 
-/* GET ALL */
+/* GET ALL (FILTER BY service / sectionType) */
 router.get("/", getSubCategories);
 
 /* DELETE */
