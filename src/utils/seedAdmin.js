@@ -6,7 +6,8 @@ import { hashPassword } from "./hashPassword.js";
 dotenv.config();
 
 const seedAdmin = async () => {
-  await mongoose.connect(process.env.MONGO_URI);
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/cadmax";
+  await mongoose.connect(mongoUri);
 
   const exists = await Admin.findOne({
     email: "admin@cadmax.com"

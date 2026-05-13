@@ -1,41 +1,36 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const Admin = require('./src/models/Admin.model.js');
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import Admin from "./src/models/Admin.model.js";
 
-mongoose.connect('mongodb://localhost:27017/cadmax')
-  .then(async () => {
-    console.log('Connected to MongoDB');
-    
-    try {
-      // Check if admin exists
+dotenv.config();
 
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/cadmax";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@gmail.com";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin@123456";
 
-      
-      const existingAdmin = await Admin.findOne({ email: 'admin@gmail.com' });
-      
-      if (!existingAdmin) {
-        console.log('Creating admin user...');
-        const hashedPassword = await bcrypt.hash('admin@123456', 10);
-        const newAdmin = new Admin({
-          email: 'admin@gmail.com',
-          password: hashedPassword
-        });
-        
-        await newAdmin.save();
-        console.log('Admin created successfully!');
-      } else {
-        console.log('Admin already exists');
-      }
-      
-      // Test login
-      const testAdmin = await Admin.findOne({ email: 'admin@gmail.com' });
-      const isMatch = await bcrypt.compare('admin@123456', testAdmin.password);
-      console.log('Password match:', isMatch);
-      
-    } catch (error) {
-      console.error('Error:', error);
+const run = async () => {
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log("Connected to MongoDB");
+
+    const existingAdmin = await Admin.findOne({ email: ADMIN_EMAIL });
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
+      await Admin.create({
+        email: ADMIN_EMAIL,
+        password: hashedPassword,
+      });
+      console.log("Admin created successfully and saved in the admin collection.");
+    } else {
+      console.log("Admin already exists");
     }
-    
-    mongoose.connection.close();
-  })
-  .catch(err => console.error('MongoDB connection error:', err));
+  } catch (error) {
+    console.error("Error:", error);
+  } finally {
+    await mongoose.connection.close();
+    process.exit();
+  }
+};
+
+run();
