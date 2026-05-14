@@ -14,7 +14,7 @@ const app = express();
 /* MIDDLEWARES */
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   })
 );
@@ -36,11 +36,11 @@ app.use("/api/subcategories", subCategoryRoutes);
 app.use("/api/projects", projectRoutes);
 
 /* INQUIRIES */
-app.use("/api/inquiries", inquiryRoutes); // 🔥 ADD THIS
+app.use("/api/inquiries", inquiryRoutes);
 
 /* HEALTH CHECK */
 app.get("/", (req, res) => {
-  res.send("Cadmax Backend API Running 🚀");
+  res.send("Cadmax Backend API Running ");
 });
 
 export default app;
