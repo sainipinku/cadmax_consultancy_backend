@@ -14,7 +14,7 @@ const app = express();
 /* MIDDLEWARES */
 app.use(
   cors({
-    origin: "http://localhost:9000",
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   })
 );
