@@ -6,28 +6,41 @@ import { hashPassword } from "./hashPassword.js";
 dotenv.config();
 
 const seedAdmin = async () => {
-  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/cadmax";
-  await mongoose.connect(mongoUri);
+  try {
+    const mongoUri =
+      process.env.MONGODB_URI ||
+      process.env.MONGO_URI;
 
-  const exists = await Admin.findOne({
-    email: "admin@cadmax.com"
-  });
+    await mongoose.connect(mongoUri);
 
-  if (exists) {
-    console.log("Admin already exists");
+    const adminEmail = process.env.ADMIN_EMAIL;
+
+    const exists = await Admin.findOne({
+      email: adminEmail,
+    });
+
+    if (exists) {
+      console.log("Admin already exists");
+      process.exit();
+    }
+
+    const hashed = await hashPassword(
+      process.env.ADMIN_PASSWORD
+    );
+
+    await Admin.create({
+      name: process.env.ADMIN_NAME,
+      email: process.env.ADMIN_EMAIL,
+      password: hashed,
+    });
+
+    console.log("Admin created successfully");
+
     process.exit();
+  } catch (error) {
+    console.log("Seeder Error:", error.message);
+    process.exit(1);
   }
-
-  const hashed = await hashPassword("admin123");
-
-  await Admin.create({
-    name: "Cadmax Admin",
-    email: "admin@cadmax.com",
-    password: hashed
-  });
-
-  console.log("Admin created");
-  process.exit();
 };
 
 seedAdmin();

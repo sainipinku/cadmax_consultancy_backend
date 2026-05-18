@@ -6,8 +6,14 @@ import Admin from "./src/models/Admin.model.js";
 dotenv.config();
 
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/cadmax";
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@gmail.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin@123456";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  throw new Error(
+    "ADMIN_EMAIL or ADMIN_PASSWORD missing in .env"
+  );
+}
 
 const run = async () => {
   try {
