@@ -1,8 +1,10 @@
 import multer from "multer";
+import multerS3 from "multer-s3";
 import path from "path";
 import fs from "fs";
+import s3 from "../config/s3.js";
 
-// Create uploads directory if it doesn't exist
+// Create uploads directory if it doesn't exist (kept for backward compatibility)
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -38,16 +40,17 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-/* ================= MULTER UPLOAD - LOCAL DISK STORAGE ================= */
-// Files are saved to local disk and served via static middleware
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
+/* ================= MULTER UPLOAD - S3 STORAGE ================= */
+// Files are uploaded to S3 bucket and served via CloudFront/S3 URL
+const storage = multerS3({
+  s3,
+  bucket: process.env.S3_BUCKET_NAME,
+  contentType: multerS3.AUTO_CONTENT_TYPE,
+  key: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const safeName = file.originalname.replace(/\s/g, "_");
-    cb(null, uniqueSuffix + "-" + safeName);
+    const folder = file.fieldname === "image" ? "projects/images" : "projects/files";
+    cb(null, `${folder}/${uniqueSuffix}-${safeName}`);
   },
 });
 

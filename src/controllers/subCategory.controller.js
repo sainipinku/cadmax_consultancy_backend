@@ -10,7 +10,7 @@ export const createSubCategory = async (req, res) => {
       title,
       description,
       redirectLink,
-      status,
+      status,s
     } = req.body;
 
     const subCategory = await SubCategory.create({

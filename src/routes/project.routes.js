@@ -2,6 +2,7 @@ import express from "express";
 import {
   createProject,
   getProjects,
+  getProjectById,
   getAvailableSectors,
   getAllProjectsAdmin,
   updateProject,
@@ -25,6 +26,9 @@ router.get("/sectors/list", getAvailableSectors);
 
 /* GET ALL PROJECTS (ADMIN) */
 router.get("/admin/all", getAllProjectsAdmin);
+
+/* GET SINGLE PROJECT BY ID */
+router.get("/:id", getProjectById);
 
 /* CREATE PROJECT */
 router.post(
