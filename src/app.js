@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import rateLimit from "express-rate-limit";
 
 /* ROUTES */
 import adminRoutes from "./routes/admin.routes.js";
@@ -21,6 +22,55 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+/* ============ RATE LIMITING ============ */
+
+// 1. Login API - 15 min (brute force )
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: {
+    success: false,
+    message: "Too many login attempts. Please try again after 15 minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 2. Contact/Inquiry form - 1 min => 3 requests (email bombing )
+const inquiryLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 3,
+  message: {
+    success: false,
+    message: "Too many submissions. Please wait a minute before sending another inquiry.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 3. General APIs - 15 min => 100 requests (DDoS )
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: {
+    success: false,
+    message: "Too many requests. Please slow down.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply general limiter to all /api routes
+app.use("/api", generalLimiter);
+
+// Apply login limiter specifically
+app.use("/api/admin/login", loginLimiter);
+
+// Apply inquiry limiter specifically
+app.use("/api/inquiries", inquiryLimiter);
+
+/* ======================================= */
 
 /* STATIC FILES - Serve uploaded files */
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
