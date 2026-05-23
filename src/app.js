@@ -9,6 +9,7 @@ import subCategoryRoutes from "./routes/subCategory.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import inquiryRoutes from "./routes/inquiry.routes.js"; // 
 
+
 const app = express();
 
 /* MIDDLEWARES */
