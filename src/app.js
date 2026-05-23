@@ -13,13 +13,19 @@ import inquiryRoutes from "./routes/inquiry.routes.js"; //
 const app = express();
 
 /* MIDDLEWARES */
-app.use(
-  cors({
-    origin: process.env.WEBSITE_URL,
-    credentials: true,
-  })
-);
-
+// app.use(
+//   cors({
+//     origin: process.env.WEBSITE_URL,
+//     credentials: true,
+//   })
+// );
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
