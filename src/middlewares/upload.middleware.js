@@ -1,14 +1,6 @@
 import multer from "multer";
 import multerS3 from "multer-s3";
-import path from "path";
-import fs from "fs";
 import s3 from "../config/s3.js";
-
-// Create uploads directory if it doesn't exist (kept for backward compatibility)
-const uploadDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 /* ================= FILE FILTER ================= */
 

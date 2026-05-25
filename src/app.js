@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import path from "path";
 import rateLimit from "express-rate-limit";
 
 /* ROUTES */
@@ -12,13 +11,24 @@ import inquiryRoutes from "./routes/inquiry.routes.js"; //
 
 const app = express();
 
+// Trust proxy - required when behind a reverse proxy (e.g., Nginx, load balancer)
+// so that express-rate-limit can correctly identify client IPs from X-Forwarded-For header
+app.set("trust proxy", 1);
+
 /* MIDDLEWARES */
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: process.env.FRONTEND_URL,
+//     credentials: true,
+//   })
+// );
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    return callback(null, true);
+  },
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -71,9 +81,6 @@ app.use("/api/admin/login", loginLimiter);
 app.use("/api/inquiries", inquiryLimiter);
 
 /* ======================================= */
-
-/* STATIC FILES - Serve uploaded files */
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 /* ROUTES */
 
