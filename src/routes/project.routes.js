@@ -11,7 +11,7 @@ import {
   permanentDeleteProject,
 } from "../controllers/project.controller.js";
 
-import { uploadImage } from "../middlewares/upload.middleware.js";
+import { uploadImage, handleMulterError } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -37,6 +37,7 @@ router.post(
     { name: "image", maxCount: 1 },
     { name: "file", maxCount: 1 },
   ]),
+  handleMulterError,
   createProject
 );
 
@@ -47,6 +48,7 @@ router.put(
     { name: "image", maxCount: 1 },
     { name: "file", maxCount: 1 },
   ]),
+  handleMulterError,
   updateProject
 );
 

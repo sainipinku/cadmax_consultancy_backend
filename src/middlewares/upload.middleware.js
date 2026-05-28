@@ -49,5 +49,38 @@ const storage = multerS3({
 export const uploadImage = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max for documents
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max for images
 });
+
+/* ================= MULTER ERROR HANDLER MIDDLEWARE ================= */
+// Use this middleware after uploadImage to catch multer errors (e.g., file too large)
+export const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        message: "Image size should be less than 10MB",
+      });
+    }
+    if (err.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({
+        success: false,
+        message: "Unexpected file field",
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  // Handle custom file filter errors
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  next();
+};

@@ -11,7 +11,7 @@ import inquiryRoutes from "./routes/inquiry.routes.js"; //
 
 const app = express();
 
-// Trust proxy - required when behind a reverse proxy (e.g., Nginx, load balancer)
+// Trust proxy - required when behind a reverse proxy 
 // so that express-rate-limit can correctly identify client IPs from X-Forwarded-For header
 app.set("trust proxy", 1);
 
