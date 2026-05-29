@@ -15,13 +15,7 @@ const app = express();
 // so that express-rate-limit can correctly identify client IPs from X-Forwarded-For header
 app.set("trust proxy", 1);
 
-/* MIDDLEWARES */
-// app.use(
-//   cors({
-//     origin: process.env.FRONTEND_URL,
-//     credentials: true,
-//   })
-// );
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
