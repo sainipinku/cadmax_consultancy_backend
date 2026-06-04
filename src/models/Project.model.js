@@ -10,10 +10,16 @@ const projectSchema = new mongoose.Schema(
     },
 
     image: {
-      type: String,
-      required: false,
-      trim: true,
-      default: null,
+      url: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      key: {
+        type: String,
+        trim: true,
+        default: null,
+      },
     },
 
     heroImage: {

@@ -2,6 +2,7 @@ import express from "express";
 import {
   createProject,
   getProjects,
+  getProjectById,
   getAvailableSectors,
   getAllProjectsAdmin,
   updateProject,
@@ -10,7 +11,7 @@ import {
   permanentDeleteProject,
 } from "../controllers/project.controller.js";
 
-import { uploadImage } from "../middlewares/upload.middleware.js";
+import { uploadImage, handleMulterError } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -26,6 +27,9 @@ router.get("/sectors/list", getAvailableSectors);
 /* GET ALL PROJECTS (ADMIN) */
 router.get("/admin/all", getAllProjectsAdmin);
 
+/* GET SINGLE PROJECT BY ID */
+router.get("/:id", getProjectById);
+
 /* CREATE PROJECT */
 router.post(
   "/",
@@ -33,6 +37,7 @@ router.post(
     { name: "image", maxCount: 1 },
     { name: "file", maxCount: 1 },
   ]),
+  handleMulterError,
   createProject
 );
 
@@ -43,6 +48,7 @@ router.put(
     { name: "image", maxCount: 1 },
     { name: "file", maxCount: 1 },
   ]),
+  handleMulterError,
   updateProject
 );
 

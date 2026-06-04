@@ -1,5 +1,23 @@
 // controllers/project.controller.js
 import Project from "../models/Project.model.js";
+import s3 from "../config/s3.js";
+
+/* ================= GET SINGLE PROJECT BY ID ================= */
+export const getProjectById = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    res.status(200).json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch project" });
+  }
+};
 
 /* ================= GET ALL PROJECTS (PUBLIC) ================= */
 export const getProjects = async (req, res) => {
@@ -134,15 +152,18 @@ export const createProject = async (req, res) => {
       area: area ? area.trim() : "",
       serialNumber: finalSerialNumber,
       isActive: isActive === 'true' || isActive === true,
-      // Disk storage mein file ka path req.files mein available hota hai
+      // S3 storage mein file ka URL aur key req.files se milta hai
       image: req.files && req.files.image && req.files.image[0] 
-        ? `/uploads/${req.files.image[0].filename}` 
+        ? {
+            url: req.files.image[0].location,
+            key: req.files.image[0].key,
+          }
         : null,
     };
 
     // Optional file upload
     if (req.files && req.files.file && req.files.file[0]) {
-      projectData.file = `/uploads/${req.files.file[0].filename}`;
+      projectData.file = req.files.file[0].location;
     }
 
     console.log("Project data to create:", projectData);
@@ -167,23 +188,54 @@ export const createProject = async (req, res) => {
 /* ================= UPDATE PROJECT ================= */
 export const updateProject = async (req, res) => {
   try {
-    const updateData = {
-      title: req.body.title,
-      description: req.body.description,
-      category: req.body.category,
-      sector: req.body.sector,
-      subCategory: req.body.subCategory,
-      location: req.body.location,
-      content: req.body.content,
-      area: req.body.area,
-      serialNumber: req.body.serialNumber ? parseInt(req.body.serialNumber) : 0,
-      isActive: req.body.isActive === 'true' || req.body.isActive === true,
-    };
-
-    if (req.files && req.files.image && req.files.image[0]) {
-      updateData.image = req.files.image[0].location;
+    // Fetch existing project first (to get old image key for S3 cleanup)
+    const existingProject = await Project.findById(req.params.id);
+    if (!existingProject) {
+      return res.status(404).json({ message: "Project not found" });
     }
 
+    // Determine projectType from body (frontend sends "category" or "projectType")
+    const projectType = req.body.projectType || req.body.category || existingProject.projectType;
+
+    // Clean up undefined values so MongoDB doesn't try to set them
+    const updateData = {};
+    if (req.body.title !== undefined) updateData.title = req.body.title;
+    if (req.body.description !== undefined) updateData.description = req.body.description;
+    if (projectType) updateData.projectType = projectType;
+    if (req.body.sector !== undefined) updateData.sector = req.body.sector;
+    if (req.body.subCategory !== undefined) updateData.subCategory = req.body.subCategory;
+    if (req.body.location !== undefined) updateData.location = req.body.location;
+    if (req.body.content !== undefined) updateData.content = req.body.content;
+    if (req.body.area !== undefined) updateData.area = req.body.area;
+    if (req.body.serialNumber !== undefined) {
+      updateData.serialNumber = parseInt(req.body.serialNumber) || 0;
+    }
+    if (req.body.isActive !== undefined) {
+      updateData.isActive = req.body.isActive === 'true' || req.body.isActive === true;
+    }
+
+    // If new image uploaded → delete old from S3 and set new one
+    if (req.files && req.files.image && req.files.image[0]) {
+      // Delete old image from S3 if it exists
+      if (existingProject.image && existingProject.image.key) {
+        try {
+          await s3.deleteObject({
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: existingProject.image.key,
+          }).promise();
+          console.log("Deleted old image from S3:", existingProject.image.key);
+        } catch (s3Err) {
+          console.error("Failed to delete old image from S3:", s3Err);
+        }
+      }
+
+      updateData.image = {
+        url: req.files.image[0].location,
+        key: req.files.image[0].key,
+      };
+    }
+
+    // If new file uploaded → set new one
     if (req.files && req.files.file && req.files.file[0]) {
       updateData.file = req.files.file[0].location;
     }
@@ -194,14 +246,18 @@ export const updateProject = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    if (!updated) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-
-    res.status(200).json(updated);
+    res.status(200).json({
+      success: true,
+      message: "Project updated successfully",
+      data: updated
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to update project" });
+    console.error("Update project error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update project",
+      error: error.message
+    });
   }
 };
 
@@ -248,11 +304,26 @@ export const restoreProject = async (req, res) => {
 /* ================= PERMANENT DELETE PROJECT ================= */
 export const permanentDeleteProject = async (req, res) => {
   try {
-    const deleted = await Project.findByIdAndDelete(req.params.id);
+    const project = await Project.findById(req.params.id);
 
-    if (!deleted) {
+    if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
+
+    // Delete image from S3 if it exists
+    if (project.image && project.image.key) {
+      try {
+        await s3.deleteObject({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: project.image.key,
+        }).promise();
+        console.log("Deleted image from S3:", project.image.key);
+      } catch (s3Err) {
+        console.error("Failed to delete image from S3:", s3Err);
+      }
+    }
+
+    await Project.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ success: true, message: "Project permanently deleted" });
   } catch (error) {
