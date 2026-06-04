@@ -9,13 +9,16 @@ import subCategoryRoutes from "./routes/subCategory.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import inquiryRoutes from "./routes/inquiry.routes.js"; // 
 
+
 const app = express();
 
-// Trust proxy - required when behind a reverse proxy 
-// so that express-rate-limit can correctly identify client IPs from X-Forwarded-For header
-app.set("trust proxy", 1);
-
-
+/* MIDDLEWARES */
+// app.use(
+//   cors({
+//     origin: process.env.WEBSITE_URL,
+//     credentials: true,
+//   })
+// );
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -23,7 +26,6 @@ app.use(cors({
   },
   credentials: true
 }));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
