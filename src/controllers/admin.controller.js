@@ -7,13 +7,20 @@ export const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (typeof email !== "string" || !email.trim() || typeof password !== "string" || !password) {
+      console.warn("[admin-login] Request is missing a valid email or password");
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
     const admin = await Admin.findOne({ email });
     if (!admin) {
+      console.warn("[admin-login] No admin account matched the submitted email");
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
+      console.warn("[admin-login] Password did not match the stored admin hash");
       return res.status(401).json({ message: "Invalid email or password" });
     }
 

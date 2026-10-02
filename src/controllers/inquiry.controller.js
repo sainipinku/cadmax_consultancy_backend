@@ -21,16 +21,25 @@ export const createInquiry = async (req, res) => {
       status: "unread", // ✅ force default for admin + frontend
     });
 
-    // 📩 send email to admin
-    await sendEmail({
-      name: finalName,
-      email,
-      phone,
-      message,
-    });
+    let emailSent = true;
+    try {
+      await sendEmail({
+        name: finalName,
+        email,
+        phone,
+        message,
+      });
+    } catch (emailError) {
+      emailSent = false;
+      console.error("Inquiry saved, but notification email failed:", emailError);
+    }
 
     res.status(201).json({
-      message: "Inquiry submitted successfully",
+      success: true,
+      emailSent,
+      message: emailSent
+        ? "Inquiry submitted successfully"
+        : "Your inquiry was saved successfully, but the notification email could not be sent. You do not need to submit it again.",
       inquiry,
     });
   } catch (err) {
@@ -103,21 +112,21 @@ export const updateInquiryStatus = async (req, res) => {
 export const getInquiries = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
-    
+
     let filter = {};
     if (status) {
       filter.status = status;
     }
-    
+
     const skip = (page - 1) * limit;
-    
+
     const inquiries = await Inquiry.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
-    
+
     const total = await Inquiry.countDocuments(filter);
-    
+
     res.status(200).json({
       success: true,
       data: inquiries,
@@ -138,17 +147,17 @@ export const getInquiries = async (req, res) => {
 export const getInquiryById = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid inquiry id" });
     }
-    
+
     const inquiry = await Inquiry.findById(id);
-    
+
     if (!inquiry) {
       return res.status(404).json({ message: "Inquiry not found" });
     }
-    
+
     res.status(200).json({
       success: true,
       data: inquiry,
@@ -163,17 +172,17 @@ export const getInquiryById = async (req, res) => {
 export const deleteInquiry = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid inquiry id" });
     }
-    
+
     const inquiry = await Inquiry.findByIdAndDelete(id);
-    
+
     if (!inquiry) {
       return res.status(404).json({ message: "Inquiry not found" });
     }
-    
+
     res.status(200).json({
       success: true,
       message: "Inquiry deleted successfully",
