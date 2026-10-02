@@ -90,7 +90,7 @@ app.use("/api/projects", projectRoutes);
 
 /* INQUIRIES */
 app.use("/api/inquiries", inquiryRoutes);
-
+app.use("/api", inquiryRoutes);
 /* HEALTH CHECK */
 app.get("/", (req, res) => {
   res.send("Cadmax Backend API Running ");

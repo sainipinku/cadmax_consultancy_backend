@@ -11,7 +11,7 @@ const sendEmail = async ({ name, email, phone, message }) => {
 
   const mailOptions = {
     from: `"CADMAX Website" <${process.env.MAIL_USER}>`,
-    to: process.env.ADMIN_EMAIL,
+    to: process.env.MAIL_USER,
     subject: "📩 New Website Inquiry",
     html: `
       <h2>New Inquiry Received</h2>
