@@ -39,12 +39,13 @@ import {
   getProjects,
   getAllProjectsAdmin,
   updateProject,
+  removeProjectImage,
   deleteProject,
   restoreProject,
   permanentDeleteProject,
 } from "../controllers/project.controller.js";
 
-import { uploadImage } from "../middlewares/upload.middleware.js";
+import { handleMulterError, uploadImage } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -79,17 +80,14 @@ router.get("/projects", protect, getAllProjectsAdmin);
 // Optional file upload middleware - handles cases when no files are uploaded
 const optionalUpload = (req, res, next) => {
   const upload = uploadImage.fields([
-    { name: "image", maxCount: 1 },
+    { name: "image", maxCount: 10 },
+    { name: "images", maxCount: 10 },
     { name: "file", maxCount: 1 },
   ]);
 
   upload(req, res, (err) => {
-    if (err && err.code === "LIMIT_UNEXPECTED_FILE") {
-      // Unexpected field, continue without files
-      return next();
-    }
     if (err) {
-      return res.status(400).json({ message: err.message });
+      return handleMulterError(err, req, res, next);
     }
     next();
   });
@@ -97,6 +95,7 @@ const optionalUpload = (req, res, next) => {
 
 router.post("/projects", protect, optionalUpload, createProject);
 router.put("/projects/:id", protect, optionalUpload, updateProject);
+router.delete("/projects/:id/images", protect, removeProjectImage);
 router.delete("/projects/:id", protect, deleteProject);
 router.put("/projects/:id/restore", protect, restoreProject);
 router.delete("/projects/:id/permanent", protect, permanentDeleteProject);

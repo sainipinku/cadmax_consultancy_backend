@@ -5,7 +5,7 @@ import s3 from "../config/s3.js";
 /* ================= FILE FILTER ================= */
 
 const fileFilter = (req, file, cb) => {
-  // Allow images for "image" field
+  // Allow images for the project image fields
   const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
   // Allow documents for "file" field
   const docTypes = [
@@ -15,7 +15,7 @@ const fileFilter = (req, file, cb) => {
     "text/plain"
   ];
   
-  if (file.fieldname === "image") {
+  if (file.fieldname === "image" || file.fieldname === "images") {
     if (imageTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -41,7 +41,7 @@ const storage = multerS3({
   key: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const safeName = file.originalname.replace(/\s/g, "_");
-    const folder = file.fieldname === "image" ? "projects/images" : "projects/files";
+    const folder = file.fieldname === "file" ? "projects/files" : "projects/images";
     cb(null, `${folder}/${uniqueSuffix}-${safeName}`);
   },
 });
@@ -49,7 +49,7 @@ const storage = multerS3({
 export const uploadImage = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max for images
+  limits: { fileSize: 10 * 1024 * 1024, files: 11 }, // 10 images and one optional document
 });
 
 /* ================= MULTER ERROR HANDLER MIDDLEWARE ================= */
@@ -65,7 +65,13 @@ export const handleMulterError = (err, req, res, next) => {
     if (err.code === "LIMIT_UNEXPECTED_FILE") {
       return res.status(400).json({
         success: false,
-        message: "Unexpected file field",
+        message: "Too many files in this field or unsupported file field",
+      });
+    }
+    if (err.code === "LIMIT_FILE_COUNT") {
+      return res.status(400).json({
+        success: false,
+        message: "You can upload up to 10 project images and one document",
       });
     }
     return res.status(400).json({

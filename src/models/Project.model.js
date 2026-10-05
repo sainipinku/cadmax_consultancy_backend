@@ -22,6 +22,21 @@ const projectSchema = new mongoose.Schema(
       },
     },
 
+    images: [
+      {
+        url: {
+          type: String,
+          trim: true,
+          required: true,
+        },
+        key: {
+          type: String,
+          trim: true,
+          required: true,
+        },
+      },
+    ],
+
     heroImage: {
       type: String,
       trim: true,
@@ -45,7 +60,14 @@ const projectSchema = new mongoose.Schema(
     sector: {
       type: String,
       required: true,
-      enum: ["ENGINEERING", "SURVEYING", "PLANNING"],
+      enum: [
+        "ENGINEERING",
+        "SURVEYING",
+        "PLANNING",
+        "ARCHITECTURAL",
+        "INFRASTRUCTURE",
+        "INFRASTRUCTURE DEVELOPMENT",
+      ],
       set: (value) => (value ? value.toUpperCase() : value),
     },
 

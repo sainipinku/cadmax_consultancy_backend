@@ -12,6 +12,8 @@ import inquiryRoutes from "./routes/inquiry.routes.js"; //
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 /* MIDDLEWARES */
 // app.use(
 //   cors({

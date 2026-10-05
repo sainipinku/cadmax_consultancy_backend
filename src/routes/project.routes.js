@@ -34,7 +34,8 @@ router.get("/:id", getProjectById);
 router.post(
   "/",
   uploadImage.fields([
-    { name: "image", maxCount: 1 },
+    { name: "image", maxCount: 10 },
+    { name: "images", maxCount: 10 },
     { name: "file", maxCount: 1 },
   ]),
   handleMulterError,
@@ -45,7 +46,8 @@ router.post(
 router.put(
   "/:id",
   uploadImage.fields([
-    { name: "image", maxCount: 1 },
+    { name: "image", maxCount: 10 },
+    { name: "images", maxCount: 10 },
     { name: "file", maxCount: 1 },
   ]),
   handleMulterError,
