@@ -227,97 +227,397 @@ export const createProject = async (req, res) => {
 /* ================= UPDATE PROJECT ================= */
 export const updateProject = async (req, res) => {
   try {
-    // Fetch existing project first (to get old image key for S3 cleanup)
-    const existingProject = await Project.findById(req.params.id);
+    const existingProject = await Project.findById(
+      req.params.id
+    );
+
     if (!existingProject) {
-      return res.status(404).json({ message: "Project not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
     }
 
-    // Determine projectType from body (frontend sends "category" or "projectType")
-    const projectType = req.body.projectType || req.body.category || existingProject.projectType;
+    console.log("===== UPDATE PROJECT =====");
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.files);
 
-    // Clean up undefined values so MongoDB doesn't try to set them
+    const projectType =
+      req.body.projectType ||
+      req.body.category ||
+      existingProject.projectType;
+
     const updateData = {};
-    if (req.body.title !== undefined) updateData.title = req.body.title;
-    if (req.body.description !== undefined) updateData.description = req.body.description;
-    if (projectType) updateData.projectType = projectType;
-    if (req.body.sector !== undefined) updateData.sector = req.body.sector;
-    if (req.body.subCategory !== undefined) updateData.subCategory = req.body.subCategory;
-    if (req.body.location !== undefined) updateData.location = req.body.location;
-    if (req.body.content !== undefined) updateData.content = req.body.content;
-    if (req.body.area !== undefined) updateData.area = req.body.area;
+
+    // =========================================
+    // NORMAL FIELDS
+    // =========================================
+
+    if (req.body.title !== undefined) {
+      updateData.title = req.body.title;
+    }
+
+    if (req.body.description !== undefined) {
+      updateData.description =
+        req.body.description;
+    }
+
+    if (projectType) {
+      updateData.projectType = projectType;
+    }
+
+    if (req.body.sector !== undefined) {
+      updateData.sector = req.body.sector;
+    }
+
+    if (req.body.subCategory !== undefined) {
+      updateData.subCategory =
+        req.body.subCategory;
+    }
+
+    if (req.body.location !== undefined) {
+      updateData.location =
+        req.body.location;
+    }
+
+    if (req.body.content !== undefined) {
+      updateData.content =
+        req.body.content;
+    }
+
+    if (req.body.area !== undefined) {
+      updateData.area = req.body.area;
+    }
+
     if (req.body.serialNumber !== undefined) {
-      updateData.serialNumber = parseInt(req.body.serialNumber) || 0;
+      updateData.serialNumber =
+        parseInt(req.body.serialNumber) || 0;
     }
+
     if (req.body.isActive !== undefined) {
-      updateData.isActive = req.body.isActive === 'true' || req.body.isActive === true;
+      updateData.isActive =
+        req.body.isActive === "true" ||
+        req.body.isActive === true;
     }
 
-    const currentImages = (existingProject.images || []).map((image) =>
-      typeof image.toObject === "function" ? image.toObject() : image
-    );
-    const projectImages = getUploadedProjectImages(req.files);
-    let existingImageKeys;
+    // =========================================
+    // CURRENT PROJECT IMAGES
+    // =========================================
 
-    if (req.body.existingImageKeys !== undefined) {
+    const currentImages = (
+      existingProject.images || []
+    ).map((image) =>
+      typeof image?.toObject === "function"
+        ? image.toObject()
+        : image
+    );
+
+    // =========================================
+    // NEW UPLOADED IMAGES
+    // =========================================
+
+    const uploadedImages =
+      getUploadedProjectImages(req.files);
+
+    console.log(
+      "UPLOADED PROJECT IMAGES:",
+      uploadedImages
+    );
+
+    // =========================================
+    // REMOVE MAIN IMAGE
+    // =========================================
+
+    const removeMainImage =
+      req.body.removeImage === "true" ||
+      req.body.removeImage === true;
+
+    console.log(
+      "REMOVE MAIN IMAGE:",
+      removeMainImage
+    );
+
+    // Old main image
+    const oldMainImage =
+      existingProject.image || null;
+
+    // =========================================
+    // EXISTING GALLERY IMAGES
+    // frontend sends existingImages
+    // =========================================
+
+    let retainedImages = currentImages;
+    let mainImageRemovedFromGallery = false;
+
+    if (req.body.existingImages !== undefined) {
       try {
-        existingImageKeys = parseExistingImageKeys(req.body.existingImageKeys);
+        const parsedExistingImages = Array.isArray(req.body.existingImages)
+          ? req.body.existingImages
+          : JSON.parse(req.body.existingImages || "[]");
+        const frontendExistingImages = Array.isArray(parsedExistingImages)
+          ? parsedExistingImages
+          : parsedExistingImages && typeof parsedExistingImages === "object"
+            ? [parsedExistingImages]
+            : null;
+
+        if (!frontendExistingImages) {
+          throw new Error("existingImages must be a JSON array");
+        }
+
+        console.log(
+          "FRONTEND EXISTING IMAGES:",
+          frontendExistingImages
+        );
+
+        /*
+         * Support both:
+         *
+         * ["key1", "key2"]
+         *
+         * OR
+         *
+         * [{ key, url }, ...]
+         */
+
+        const allowedImageReferences = new Set(
+          frontendExistingImages.flatMap((image) => {
+            if (typeof image === "string" && image.trim()) {
+              return [image.trim()];
+            }
+
+            if (image && typeof image === "object") {
+              const references = [image.key, image.url]
+                .filter(
+                  (reference) =>
+                    typeof reference === "string" && reference.trim()
+                )
+                .map((reference) => reference.trim());
+
+              if (references.length) {
+                return references;
+              }
+            }
+
+            throw new Error("Each existing image must have a key or URL");
+          })
+        );
+
+        retainedImages = currentImages.filter(
+          (image) =>
+            allowedImageReferences.has(image?.key) ||
+            allowedImageReferences.has(image?.url)
+        );
+
+        const mainImageWasInGallery = currentImages.some(
+          (image) =>
+            (oldMainImage?.key && image?.key === oldMainImage.key) ||
+            (oldMainImage?.url && image?.url === oldMainImage.url)
+        );
+        const mainImageWasRetained = retainedImages.some(
+          (image) =>
+            (oldMainImage?.key && image?.key === oldMainImage.key) ||
+            (oldMainImage?.url && image?.url === oldMainImage.url)
+        );
+
+        mainImageRemovedFromGallery =
+          mainImageWasInGallery && !mainImageWasRetained;
       } catch (error) {
+        console.error(
+          "existingImages parse error:",
+          error
+        );
+
         return res.status(400).json({
           success: false,
-          message: error.message,
+          message:
+            "Invalid existingImages data",
         });
       }
+    }
 
-      const currentImagesByKey = new Map(currentImages.map((image) => [image.key, image]));
-      const unknownKeys = existingImageKeys.filter((key) => !currentImagesByKey.has(key));
-      if (unknownKeys.length) {
-        return res.status(400).json({
-          success: false,
-          message: "One or more existing image keys do not belong to this project",
-        });
-      }
+    // =========================================
+    // MAIN IMAGE UPLOAD
+    // frontend field name = image
+    // =========================================
 
-      const retainedImages = existingImageKeys.map((key) => currentImagesByKey.get(key));
-      const finalImages = [...retainedImages, ...projectImages];
-      updateData.images = finalImages;
+    const newMainImage =
+      req.files?.image?.[0];
+
+    if (newMainImage) {
+      const mainImageObject = {
+        url:
+          newMainImage.location ||
+          newMainImage.path,
+
+        key:
+          newMainImage.key ||
+          newMainImage.filename,
+      };
+
+      updateData.image =
+        mainImageObject;
+
+      console.log(
+        "NEW MAIN IMAGE:",
+        mainImageObject
+      );
+    }
+
+    // =========================================
+    // REMOVE MAIN IMAGE
+    // =========================================
+
+    else if (removeMainImage) {
+      updateData.image = null;
+
+      console.log(
+        "MAIN IMAGE REMOVED"
+      );
+    }
+
+    // =========================================
+    // GALLERY UPLOAD
+    // frontend field = images
+    // =========================================
+
+    const newGalleryFiles =
+      req.files?.images || [];
+
+    const newGalleryImages =
+      newGalleryFiles.map((file) => ({
+        url:
+          file.location ||
+          file.path,
+
+        key:
+          file.key ||
+          file.filename,
+      }));
+
+    // =========================================
+    // FINAL GALLERY
+    // =========================================
+
+    const finalImages = [
+      ...retainedImages,
+      ...newGalleryImages,
+    ];
+
+    if (
+      mainImageRemovedFromGallery &&
+      !newMainImage &&
+      !removeMainImage
+    ) {
       updateData.image = finalImages[0] || null;
-    } else if (projectImages.length) {
-      updateData.image = projectImages[0];
-      updateData.images = projectImages;
     }
 
-    // If new file uploaded → set new one
-    if (req.files && req.files.file && req.files.file[0]) {
-      updateData.file = req.files.file[0].location;
-    }
+    updateData.images =
+      finalImages;
 
-    const updated = await Project.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
+    console.log(
+      "FINAL IMAGES:",
+      finalImages
     );
+
+    console.log(
+      "FINAL MAIN IMAGE:",
+      updateData.image
+    );
+
+    // =========================================
+    // OTHER FILE
+    // =========================================
+
+    if (
+      req.files?.file &&
+      req.files.file[0]
+    ) {
+      updateData.file =
+        req.files.file[0].location ||
+        req.files.file[0].path;
+    }
+
+    console.log(
+      "FINAL UPDATE DATA:",
+      JSON.stringify(
+        updateData,
+        null,
+        2
+      )
+    );
+
+    // =========================================
+    // UPDATE DB
+    // =========================================
+
+    const updated =
+      await Project.findByIdAndUpdate(
+        req.params.id,
+        {
+          $set: updateData,
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
     if (!updated) {
-      return res.status(404).json({ message: "Project not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
     }
 
-    if (existingImageKeys !== undefined || projectImages.length) {
-      const retainedKeys = getProjectImageKeys(updated);
-      const removedKeys = [...getProjectImageKeys(existingProject)].filter((key) => !retainedKeys.has(key));
-      await deleteProjectImageKeysFromS3(removedKeys);
+    // =========================================
+    // DELETE REMOVED IMAGES FROM S3
+    // =========================================
+
+    const oldKeys =
+      getProjectImageKeys(
+        existingProject
+      );
+
+    const newKeys =
+      getProjectImageKeys(
+        updated
+      );
+
+    const removedKeys = [
+      ...oldKeys,
+    ].filter(
+      (key) =>
+        !newKeys.has(key)
+    );
+
+    console.log(
+      "S3 KEYS TO DELETE:",
+      removedKeys
+    );
+
+    if (removedKeys.length) {
+      await deleteProjectImageKeysFromS3(
+        removedKeys
+      );
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Project updated successfully",
-      data: updated
+      message:
+        "Project updated successfully",
+      data: updated,
     });
   } catch (error) {
-    console.error("Update project error:", error);
-    res.status(500).json({
+    console.error(
+      "Update project error:",
+      error
+    );
+
+    return res.status(500).json({
       success: false,
-      message: "Failed to update project",
-      error: error.message
+      message:
+        "Failed to update project",
+      error: error.message,
     });
   }
 };
